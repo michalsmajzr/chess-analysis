@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "Bash(gh pr:*)",
+      "Bash(gh issue:*)",
+      "Bash(npm version:*)",
+      "Bash(npm publish:*)",
+      "Bash(gh search:*)",
+      "Skill(schedule)",
+      "Bash(npm whoami *)",
+      "Bash(cat)",
+      "Bash(rm /tmp/pr165-comment.md)",
+      "Read(//Users/shaack/Development/repositories/MyProjects/**)",
+      "Bash(gh release *)",
+      "Bash(gh api *)",
+      "Bash(pkill -f \"http.server 8731\")",
+      "Bash(rm -f /tmp/bis-server.log)",
+      "Bash(rm /tmp/issue56.md)",
+      "Bash([ -d \"$d\" ])",
+      "Bash(pkill -f \"http.server 8732\")",
+      "Bash(rm -f /tmp/bsm-server.log)",
+      "Bash(rm -f c26.md c19.md)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
