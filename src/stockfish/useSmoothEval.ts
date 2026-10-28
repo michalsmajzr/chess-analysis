@@ -10,7 +10,9 @@ export function useSmoothEval(targetValue: number, speed = 0.12) {
     const animate = () => {
       setSmoothValue((prev) => {
         const diff = targetValue - prev;
-        if (Math.abs(diff) < 0.01) return targetValue;
+        if (Math.abs(diff) < 0.01) {
+          return targetValue;
+        }
         return prev + diff * speed;
       });
       frame = requestAnimationFrame(animate);

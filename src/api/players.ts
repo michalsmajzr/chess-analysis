@@ -13,7 +13,9 @@ export const PLAYERS: Record<string, Player> = {
 export function mapPlayer(player: Player): Player {
   const mapped = player.fideid && PLAYERS[player.fideid];
 
-  if (mapped) return mapped;
+  if (mapped) {
+    return mapped;
+  }
 
   return {
     fname: player.fname,

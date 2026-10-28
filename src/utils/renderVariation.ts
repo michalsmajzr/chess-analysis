@@ -1,15 +1,5 @@
-import { Chess } from "chess.js";
-import { TreeNode } from "@/types/Game";
-import {
-  RenderItem,
-  RenderChainResult,
-  RenderVariationResult,
-} from "@/types/Render";
-
-function getMoveNumberFromFen(fen: string): number {
-  const parts = fen.split(" ");
-  return parseInt(parts[5], 10);
-}
+import type { TreeNode } from "@/types/Game";
+import type { RenderItem, RenderVariationResult } from "@/types/Render";
 
 export function renderVariation(
   node: TreeNode,
@@ -18,126 +8,46 @@ export function renderVariation(
   startsWithWhite: boolean,
 ): RenderVariationResult {
   const items: RenderItem[] = [];
+  let moveNumber = startMoveNumber;
+  let whiteTurn = startsWithWhite;
 
-  function renderChain(
-    firstNode: TreeNode,
-    moveNumber: number,
-    isWhiteTurn: boolean,
-    isFirstNode = true,
-  ): RenderChainResult {
-    const chainItems: RenderItem[] = [];
-
-    let n: TreeNode | null = firstNode;
-    let currentMoveNumber = moveNumber;
-    let whiteTurn = isWhiteTurn;
-    let first = isFirstNode;
-
-    while (n) {
-      const isWhite = whiteTurn;
-
-      if (isWhite) {
-        chainItems.push({
-          type: "variation_label",
-          text: `${currentMoveNumber}.`,
-        });
-      } else if (first) {
-        chainItems.push({
-          type: "variation_label",
-          text: `${currentMoveNumber}...`,
-        });
-      }
-
-      chainItems.push({
-        type: "move",
-        node: n,
-        active: current === n,
+  function appendMove(move: TreeNode, showBlackNumber: boolean) {
+    if (whiteTurn || showBlackNumber) {
+      items.push({
+        type: "variation_label",
+        text: whiteTurn ? `${moveNumber}.` : `${moveNumber}...`,
       });
-
-      if (n.main) {
-        const nextMoveNumber = isWhite
-          ? currentMoveNumber
-          : currentMoveNumber + 1;
-
-        const mainResult = renderChain(n.main, nextMoveNumber, !isWhite, false);
-
-        chainItems.push(...mainResult.items);
-
-        currentMoveNumber = mainResult.lastMoveNumber;
-        whiteTurn = mainResult.isWhiteTurn;
-
-        if (n.variations.length) {
-          for (const v of n.variations) {
-            chainItems.push({
-              type: "text",
-              text: " (",
-            });
-
-            const variationMoveNumber = getMoveNumberFromFen(n.fen);
-            const variationStartsWithWhite = new Chess(n.fen).turn() === "w";
-
-            const result = renderVariation(
-              v,
-              current,
-              variationMoveNumber,
-              variationStartsWithWhite,
-            );
-
-            chainItems.push(...result.items);
-
-            chainItems.push({
-              type: "text",
-              text: ")",
-            });
-          }
-        }
-
-        first = false;
-        n = null;
-      } else {
-        if (n.variations.length) {
-          for (const v of n.variations) {
-            chainItems.push({
-              type: "text",
-              text: " (",
-            });
-
-            const variationMoveNumber = getMoveNumberFromFen(n.fen);
-            const variationStartsWithWhite = new Chess(n.fen).turn() === "w";
-
-            const result = renderVariation(
-              v,
-              current,
-              variationMoveNumber,
-              variationStartsWithWhite,
-            );
-
-            chainItems.push(...result.items);
-
-            chainItems.push({
-              type: "text",
-              text: ")",
-            });
-          }
-        }
-
-        first = false;
-        n = null;
-      }
     }
-
-    return {
-      items: chainItems,
-      lastMoveNumber: currentMoveNumber,
-      isWhiteTurn: whiteTurn,
-    };
+    items.push({ type: "move", node: move, active: current === move });
   }
 
-  const result = renderChain(node, startMoveNumber, startsWithWhite, true);
+  function appendAlternatives(parent: TreeNode) {
+    const [, turn, , , , number] = parent.fen.split(" ");
+    for (const alternative of parent.variations) {
+      items.push({ type: "text", text: " (" });
+      items.push(...renderVariation(alternative, current, Number(number), turn === "w").items);
+      items.push({ type: "text", text: ")" });
+    }
+  }
 
-  items.push(...result.items);
+  let cursor = node;
+  let afterAlternative = false;
+  appendMove(cursor, true);
 
-  return {
-    items,
-    lastMoveNumber: result.lastMoveNumber,
-  };
+  while (cursor.main) {
+    if (!whiteTurn) {
+      moveNumber++;
+    }
+    whiteTurn = !whiteTurn;
+    appendMove(cursor.main, afterAlternative);
+    // Alternatives replace cursor.main: show them before its continuation,
+    // instead of appending them after the entire remaining line.
+    appendAlternatives(cursor);
+    afterAlternative = cursor.variations.length > 0;
+    cursor = cursor.main;
+  }
+
+  // Older trees can end with alternatives without a main reply.
+  appendAlternatives(cursor);
+  return { items, lastMoveNumber: moveNumber };
 }

@@ -1,9 +1,21 @@
 import { Chess } from "chess.js";
 import { mapPlayer } from "@/api/players";
-import { extractSan } from "@/utils/tree";
+import { extractLiveSan } from "@/utils/syncLiveMainLine";
 import { Game, Pairing, Tournament, RoundInfo } from "@/types/Game";
 
-const BASE_URL = "https://1.pool.livechesscloud.com/get";
+const LIVE_FETCH_OPTIONS: RequestInit = { cache: "no-store" };
+
+function liveUrl(baseId: string, resource: string) {
+  return `/api/livechess/${encodeURIComponent(baseId)}/${resource}`;
+}
+
+async function fetchLiveJson(url: string) {
+  const response = await fetch(url, LIVE_FETCH_OPTIONS);
+  if (!response.ok) {
+    throw new Error(`LiveChessCloud request failed: ${response.status}`);
+  }
+  return response.json();
+}
 
 export async function fetchData(
   bases: string[],
@@ -16,27 +28,15 @@ export async function fetchData(
   const results = await Promise.all(
     bases.map(async (baseId, index) => {
       try {
-        const tournamentResponse = await fetch(
-          `${BASE_URL}/${baseId}/tournament.json`,
+        const tournament = await fetchLiveJson(
+          liveUrl(baseId, "tournament.json"),
         );
-
-        if (!tournamentResponse.ok) {
-          return null;
-        }
-
-        const tournament = await tournamentResponse.json();
         const roundId = selectedRounds[index] ?? 1;
 
         // load round
-        const roundResponse = await fetch(
-          `${BASE_URL}/${baseId}/round-${roundId}/index.json`,
+        const round = await fetchLiveJson(
+          liveUrl(baseId, `round-${roundId}/index.json`),
         );
-
-        if (!roundResponse.ok) {
-          return null;
-        }
-
-        const round = await roundResponse.json();
 
         const validPairings: { pairing: Pairing; index: number }[] = (
           round.pairings ?? []
@@ -60,15 +60,9 @@ export async function fetchData(
           validPairings.map(
             async ({ pairing, index }): Promise<Game | null> => {
               try {
-                const response = await fetch(
-                  `${BASE_URL}/${baseId}/round-${roundId}/game-${index + 1}.json`,
+                const game = await fetchLiveJson(
+                  liveUrl(baseId, `round-${roundId}/game-${index + 1}.json`),
                 );
-
-                if (!response.ok) {
-                  return null;
-                }
-
-                const game = await response.json();
 
                 return {
                   id: `${baseId}-${roundId}-${index + 1}`,
@@ -77,6 +71,9 @@ export async function fetchData(
                   result: game.result,
                   headers: {},
                   moves: game.moves ?? [],
+                  clock: game.clock
+                    ? { ...game.clock, timestamp: Date.now() }
+                    : undefined,
                 };
               } catch {
                 return null;
@@ -119,15 +116,9 @@ export async function fetchData(
 
 // load tournament
 export async function loadTournaments(bases: string[]) {
-  return Promise.all(
+  const results = await Promise.allSettled(
     bases.map(async (baseId, index) => {
-      const response = await fetch(`${BASE_URL}/${baseId}/tournament.json`);
-
-      if (!response.ok) {
-        throw new Error(`Failed to load tournament ${baseId}`);
-      }
-
-      const tournament = await response.json();
+      const tournament = await fetchLiveJson(liveUrl(baseId, "tournament.json"));
 
       return {
         id: baseId,
@@ -137,29 +128,32 @@ export async function loadTournaments(bases: string[]) {
       };
     }),
   );
+
+  // A temporary failure of one tournament must not erase all other menus.
+  return results.flatMap(result => result.status === "fulfilled" ? [result.value] : []);
 }
 
 // load round
 export async function loadRound(baseId: string, roundId: number) {
-  const response = await fetch(
-    `${BASE_URL}/${baseId}/round-${roundId}/index.json`,
+  const round = await fetchLiveJson(
+    liveUrl(baseId, `round-${roundId}/index.json`),
   );
 
-  const round = await response.json();
+  const validPairings: { pairing: Pairing; index: number }[] = (
+    round.pairings ?? []
+  )
+    .map((pairing: Pairing, index: number) => ({ pairing, index }))
+    .filter(
+      ({ pairing }: { pairing: Pairing }) => pairing?.white && pairing?.black,
+    );
 
   const games = await Promise.all(
-    (round.pairings ?? []).map(
-      async (pairing: Pairing, index: number): Promise<Game | null> => {
+    validPairings.map(
+      async ({ pairing, index }): Promise<Game | null> => {
         try {
-          const gameResponse = await fetch(
-            `${BASE_URL}/${baseId}/round-${roundId}/game-${index + 1}.json`,
+          const game = await fetchLiveJson(
+          liveUrl(baseId, `round-${roundId}/game-${index + 1}.json`),
           );
-
-          if (!gameResponse.ok) {
-            return null;
-          }
-
-          const game = await gameResponse.json();
 
           return {
             id: `${baseId}-${roundId}-${index + 1}`,
@@ -168,6 +162,9 @@ export async function loadRound(baseId: string, roundId: number) {
             result: game.result,
             headers: {},
             moves: game.moves ?? [],
+            clock: game.clock
+              ? { ...game.clock, timestamp: Date.now() }
+              : undefined,
           };
         } catch {
           return null;
@@ -179,7 +176,7 @@ export async function loadRound(baseId: string, roundId: number) {
   return {
     info: {
       ...round,
-      pairings: (round.pairings ?? []).map((pairing: Pairing) => ({
+      pairings: validPairings.map(({ pairing }) => ({
         ...pairing,
         white: mapPlayer(pairing.white),
         black: mapPlayer(pairing.black),
@@ -204,12 +201,12 @@ export async function loadGameFen(
   const chess = new Chess();
 
   for (const moveStr of firstGame.moves ?? []) {
-    const san = extractSan(moveStr);
+    const san = extractLiveSan(moveStr);
 
     if (san) {
       try {
         chess.move(san);
-      } catch (e) {
+      } catch {
         console.warn("Invalid move:", san);
       }
     }

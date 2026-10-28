@@ -3,6 +3,8 @@
 ## Description
 This project is used to analyze chess games from the livechesscloud app.
 
+Demo version is available on my domain [chess-analysis.michalsmajzr.cz](https://chess-analysis.michalsmajzr.cz/)
+
 ## Project structure 
 - **public** – static images (images for cm-chessboard and the Stockfish engine)
 - **src** – source files

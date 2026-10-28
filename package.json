@@ -3,9 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node server.mjs --dev",
     "build": "next build",
-    "start": "next start",
+    "start": "node server.mjs",
+    "obs-bridge": "electron bridge/main.mjs",
+    "publisher-token": "node scripts/generatePublisherToken.mjs",
+    "stockfish:build": "docker build -t chess-stockfish -f docker/Dockerfile .",
+    "stockfish:small:start": "docker run --rm --name chess-stockfish-small --cpus 2 --memory 512m -p 127.0.0.1:5000:5000 chess-stockfish",
+    "stockfish:start": "npm run stockfish:small:start",
+    "test:remote-stockfish": "node --test server/*.test.mjs src/websocket/client.test.mjs",
+    "test:stockfish-client": "node --test src/stockfish/*.test.mjs",
     "lint": "eslint"
   },
   "dependencies": {
@@ -18,15 +25,18 @@
     "cm-chessboard": "^8.12.19",
     "cm-pgn": "^5.0.0",
     "next": "16.2.11",
+    "obs-websocket-js": "^5.0.8",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "uuid": "^14.0.1"
+    "uuid": "^14.0.1",
+    "ws": "^8.21.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "electron": "^44.4.3",
     "eslint": "^9",
     "eslint-config-next": "16.2.11",
     "tailwindcss": "^4",

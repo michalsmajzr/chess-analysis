@@ -34,6 +34,16 @@ export function createBoard(
   fen: string,
   onMove?: Function,
   disableExtensions = false,
+  onAnnotationsChange?: (annotations: {
+    arrows: { from: string; to: string; brush?: "success" | "warning" | "info" | "danger" }[];
+    markers: { square: string; brush?: "success" | "warning" | "info" | "danger" }[];
+  }) => void,
+  onDragChange?: (drag: {
+    active: boolean;
+    from?: string;
+    to?: string | null;
+    targets?: string[];
+  }) => void,
 ) {
   let currentFen = fen;
 
@@ -66,6 +76,8 @@ export function createBoard(
   });
 
   let arrows: any = null;
+  let engineArrowKeys = new Set<string>();
+  let currentEngineArrows: any[] = [];
   let markers: any = null;
   let promotionDialog: any = null;
 
@@ -75,16 +87,56 @@ export function createBoard(
     promotionDialog = chessboard.getExtension(PromotionDialog);
   }
 
+  const reportAnnotations = () => {
+    if (!onAnnotationsChange || !arrows || !markers) {
+      return;
+    }
+    const reportedArrows = arrows.getArrows()
+      .filter((arrow: any) => !(
+        arrow.type.class === ARROW_TYPE.info.class &&
+        engineArrowKeys.has(`${arrow.from}-${arrow.to}`)
+      ))
+      .map((arrow: any) => ({
+      from: arrow.from,
+      to: arrow.to,
+      brush: Object.entries(ARROW_TYPE).find(([, type]) => type.class === arrow.type.class)?.[0] as
+        | "success" | "warning" | "info" | "danger" | undefined,
+      }));
+    const reportedMarkers = markers.getMarkers()
+      .filter((marker: any) => marker.type.class.startsWith("marker-circle-"))
+      .map((marker: any) => ({
+        square: marker.square,
+        brush: marker.type.class.replace("marker-circle-", "") as
+          | "success" | "warning" | "info" | "danger",
+      }));
+    onAnnotationsChange({ arrows: reportedArrows, markers: reportedMarkers });
+  };
+
   // delete arrows and markers left click
-  element.addEventListener("pointerdown", (event) => {
+  const handlePointerDown = (event: PointerEvent) => {
     if (event.button === 0) {
       arrows?.removeArrows();
       markers?.removeMarkers();
+      reportAnnotations();
     }
-  });
+  };
+  const handleMouseUp = (event: MouseEvent) => {
+    if (event.button === 2) {
+      reportAnnotations();
+    }
+  };
+  element.addEventListener("pointerdown", handlePointerDown);
+  // RightClickAnnotator also listens for mouseup and was registered first, so
+  // its final arrow state is available synchronously here.
+  element.addEventListener("mouseup", handleMouseUp);
 
-  // handles piece movement and validates chess moves
-  chessboard.enableMoveInput((event: any) => {
+  // A board without an onMove callback is a display-only board (the compact
+  // game previews and broadcast boards). Do not enable the move-input layer
+  // there: otherwise pieces can still be picked up even though no move can be
+  // applied.
+  if (onMove) {
+    // handles piece movement and validates chess moves
+    chessboard.enableMoveInput((event: any) => {
     const chess = new Chess(currentFen);
 
     switch (event.type) {
@@ -105,6 +157,12 @@ export function createBoard(
             if (markers) {
               markers.addLegalMovesMarkers(legalMoves);
             }
+            onDragChange?.({
+              active: true,
+              from: event.squareFrom,
+              to: null,
+              targets: legalMoves.map(move => move.to),
+            });
 
             return true;
           }
@@ -112,6 +170,13 @@ export function createBoard(
 
         return false;
       }
+
+      case INPUT_EVENT_TYPE.movingOverSquare:
+        return true;
+
+      case INPUT_EVENT_TYPE.moveInputCanceled:
+        onDragChange?.({ active: false });
+        return true;
 
       // validate whether the selected move is legal
       case INPUT_EVENT_TYPE.validateMoveInput: {
@@ -128,6 +193,7 @@ export function createBoard(
       // handle the completion of a piece movement
       case INPUT_EVENT_TYPE.moveInputFinished: {
         markers?.removeLegalMovesMarkers();
+        onDragChange?.({ active: false });
 
         const moves = chess.moves({
           verbose: true,
@@ -177,14 +243,15 @@ export function createBoard(
       default:
         return true;
     }
-  });
+    });
+  }
 
-  function setFen(newFen: string) {
+  function setFen(newFen: string, animated = false) {
     currentFen = newFen;
 
     const chess = new Chess(newFen);
 
-    chessboard.setPosition(newFen);
+    chessboard.setPosition(newFen, animated);
 
     const inCheck = chess.isCheck();
     const checkColor = inCheck ? chess.turn() : null;
@@ -196,9 +263,41 @@ export function createBoard(
     chessboard.setLastMove(from, to);
   }
 
+  function setDragPreview(drag: {
+    active: boolean;
+    from?: string;
+    to?: string | null;
+    targets?: string[];
+  }) {
+    chessboard.setPosition(currentFen, false);
+
+    markers?.removeLegalMovesMarkers();
+    markers?.removeMarkers(MARKER_TYPE.square);
+
+    if (!drag.active) {
+      return;
+    }
+
+    for (const square of drag.targets ?? []) {
+      markers?.addMarker(
+        chessboard.getPiece(square) ? MARKER_TYPE.bevel : MARKER_TYPE.dot,
+        square,
+      );
+    }
+
+    if (drag.from) {
+      markers?.addMarker(MARKER_TYPE.square, drag.from);
+    }
+
+  }
+
   function setEngineArrows(engineArrows: any[]) {
+    currentEngineArrows = engineArrows ?? [];
     if (arrows) {
       arrows.removeArrows(ARROW_TYPE.info);
+      engineArrowKeys = new Set(
+        (engineArrows ?? []).map(arrow => `${arrow.from}-${arrow.to}`),
+      );
 
       if (engineArrows?.length) {
         const min_opacity = 0.75;
@@ -226,7 +325,39 @@ export function createBoard(
     }
   }
 
+  function clearAnnotations() {
+    arrows?.removeArrows();
+    markers?.removeMarkers();
+    setEngineArrows(currentEngineArrows);
+  }
+
+  function setBroadcastAnnotations(broadcastArrows: any[], broadcastMarkers: any[]) {
+    if (!arrows || !markers) {
+      return;
+    }
+    arrows.removeArrows();
+    markers.removeMarkers();
+    for (const arrow of broadcastArrows ?? []) {
+      const type = ARROW_TYPE[arrow.brush as keyof typeof ARROW_TYPE] ?? ARROW_TYPE.info;
+      if (arrow.from && arrow.to) {
+        arrows.addArrow(type, arrow.from, arrow.to);
+      }
+    }
+    for (const marker of broadcastMarkers ?? []) {
+      if (!marker.square) {
+        continue;
+      }
+      const brush = marker.brush ?? "success";
+      markers.addMarker(
+        { class: `marker-circle-${brush}`, slice: "markerCircle" },
+        marker.square,
+      );
+    }
+  }
+
   function destroy() {
+    element.removeEventListener("pointerdown", handlePointerDown);
+    element.removeEventListener("mouseup", handleMouseUp);
     chessboard.destroy();
   }
 
@@ -234,6 +365,9 @@ export function createBoard(
     setFen,
     setLastMove,
     setEngineArrows,
+    clearAnnotations,
+    setBroadcastAnnotations,
+    setDragPreview,
     destroy,
   };
 }

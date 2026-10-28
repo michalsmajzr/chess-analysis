@@ -7,6 +7,10 @@ import {
   EngineCallback,
 } from "@/types/Engine";
 
+// Depth 8 is quick enough to populate the panel, while avoiding the very
+// noisy opening guesses from the first few Stockfish iterations.
+const FIRST_PV_DEPTH = 8;
+
 export class StockfishService {
   private worker: Worker | null = null;
   private callback: EngineCallback | null = null;
@@ -125,17 +129,21 @@ export class StockfishService {
   }
 
   private handleInfo(line: string, msgFen: string, msgId: number) {
+    if (/\b(?:lowerbound|upperbound)\b/.test(line)) {
+      return;
+    }
     const depthMatch = line.match(/depth (\d+)/);
 
     if (depthMatch) {
       const depth = Number(depthMatch[1]);
 
-      if (depth >= 15) {
+      if (depth >= FIRST_PV_DEPTH) {
         const multiPvMatch = line.match(/multipv (\d+)/);
         const rank = multiPvMatch ? Number(multiPvMatch[1]) : 1;
         const previousDepth = this.bestDepthByPV.get(rank) ?? 0;
 
-        if (depth >= previousDepth) {
+        // One update per rank and depth keeps the Multi-PV display readable.
+        if (depth > previousDepth) {
           this.bestDepthByPV.set(rank, depth);
           const pvMatch = line.match(/\spv\s+(.+)$/);
 
@@ -166,8 +174,6 @@ export class StockfishService {
                 }
 
                 score = cp / 100;
-                this.lastScore = score;
-                this.lastMate = undefined;
               }
 
               const mateMatch = line.match(/score mate (-?\d+)/);
@@ -175,8 +181,11 @@ export class StockfishService {
                 const mateIn = Number(mateMatch[1]);
                 mate = isWhiteTurn ? mateIn : -mateIn;
                 score = undefined;
+              }
+
+              if (rank === 1 && (score !== undefined || mate !== undefined)) {
+                this.lastScore = score;
                 this.lastMate = mate;
-                this.lastScore = undefined;
               }
 
               const pv: EnginePV = {

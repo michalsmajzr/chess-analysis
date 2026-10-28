@@ -67,7 +67,12 @@ export function AnalysisSideBar({
 
   useEffect(() => {
     const container = scrollContainerRef.current;
-    if (!container) return;
+    // In the stacked mobile layout this panel sits below the board. Keeping
+    // the active move visible would otherwise move the page away from the
+    // board after every played move or selected game.
+    if (!container || window.matchMedia("(max-width: 1000px)").matches) {
+      return;
+    }
 
     requestAnimationFrame(() => {
       const activeElement = container.querySelector(
@@ -85,9 +90,9 @@ export function AnalysisSideBar({
   }, [currentNode]);
 
   return (
-    <div className="w-120 h-143 flex flex-col overflow-hidden">
+    <div className="h-143 w-120 shrink-0 flex flex-col overflow-hidden max-[1000px]:h-100 max-[1000px]:w-full">
       {Array.from({ length: engineVariations }).map((_, index) => {
-        const variation = variations[index];
+        const variation = variations.find(variation => variation.rank === index + 1);
 
         if (!variation) {
           return <div key={`pv-${index}`} className="h-7 shrink-0 w-full" />;
@@ -123,7 +128,9 @@ export function AnalysisSideBar({
                 promotion,
               });
 
-              if (!move) break;
+              if (!move) {
+                break;
+              }
 
               const prefix =
                 turn === "w" ? `${moveNumber}.` : `${moveNumber}...`;
@@ -206,7 +213,7 @@ export function AnalysisSideBar({
 
       <div
         ref={scrollContainerRef}
-        className="flex-1 min-h-0 grid grid-cols-[3rem_1fr_1fr] auto-rows-max items-center gap-y-1 p-2 bg-white overflow-y-auto"
+        className="flex-1 min-h-0 grid grid-flow-row-dense grid-cols-[3.25rem_minmax(0,1fr)_minmax(0,1fr)] auto-rows-max items-center gap-y-1.5 p-2 bg-white overflow-y-auto"
       >
         {gameRoot &&
           renderLine(gameRoot, currentNode).map((item, i) => {
@@ -214,7 +221,7 @@ export function AnalysisSideBar({
               return (
                 <div
                   key={`n-${i}`}
-                  className="col-start-1 text-gray-400 text-right pr-4 font-mono text-sm select-none"
+                  className="col-start-1 self-center text-gray-400 text-right pr-3 font-mono text-sm tabular-nums select-none"
                 >
                   {item.text}
                 </div>
@@ -227,7 +234,7 @@ export function AnalysisSideBar({
                   key={`m-${i}`}
                   onClick={() => goToNode(item.node)}
                   data-active={item.active}
-                  className={`cursor-pointer px-2 py-1 text-sm font-medium rounded transition-all
+                  className={`cursor-pointer min-w-0 px-2 py-1.5 text-sm font-semibold rounded-md transition-colors
                   ${item.color === "w" ? "col-start-2" : "col-start-3"} 
                   ${item.active ? "bg-primary-container" : "hover:bg-gray-100 text-gray-800"}`}
                 >
@@ -240,29 +247,29 @@ export function AnalysisSideBar({
               return (
                 <div
                   key={`v-${i}`}
-                  className="col-span-3 my-1 ml-2 p-2 bg-gray-50 border-l-4 border-gray-200 rounded-r text-[13px] leading-relaxed"
+                  className="col-span-3 min-w-0 rounded-md bg-slate-50 px-2 py-1.5 text-sm leading-6"
+                  style={{ marginLeft: `${item.depth * 22}px` }}
                 >
-                  <div className="flex flex-wrap gap-x-1.5 items-baseline">
+                  <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
                     {item.content.map((sub, si) => (
-                      <span key={si} className="inline-flex">
+                      <span key={si} className="inline-flex items-baseline">
                         {sub.type === "variation_label" && (
-                          <span className="text-gray-400 font-bold mr-0.5 italic">
+                          <span className="mr-0.5 font-mono text-xs font-semibold italic tabular-nums text-slate-400">
                             {sub.text}
                           </span>
                         )}
                         {sub.type === "move" && (
                           <span
                             onClick={() => goToNode(sub.node)}
-                            className={`cursor-pointer px-1 rounded hover:bg-gray-200
+                            data-active={sub.active}
+                            className={`cursor-pointer rounded px-1 py-0.5 font-medium transition-colors hover:bg-gray-200
                             ${sub.active ? "bg-inverse-primary hover:bg-inverse-primary font-bold" : "text-gray-600"}`}
                           >
                             {sub.node.move}
                           </span>
                         )}
                         {sub.type === "text" && (
-                          <span className="text-gray-300 px-0.5">
-                            {sub.text}
-                          </span>
+                          <span className="px-0.5 text-slate-400">{sub.text}</span>
                         )}
                       </span>
                     ))}

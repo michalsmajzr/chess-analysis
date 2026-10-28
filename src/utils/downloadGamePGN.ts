@@ -1,172 +1,121 @@
 import { Chess } from "chess.js";
-import { TreeNode } from "@/types/Game";
+import type { Game, Pairing, Player, Result, TreeNode } from "@/types/Game";
 
-function serializeChain(
-  firstNode: TreeNode | undefined,
-  startFen: string,
-): string {
-  if (!firstNode) {
+function formatMove(node: TreeNode, startFen: string, firstInLine: boolean): string {
+  if (!node.move) {
     return "";
   }
-
   const chess = new Chess(startFen);
-  const parts: string[] = [];
-
-  let node: TreeNode | undefined = firstNode;
-
-  while (node) {
-    if (!node.move) {
-      break;
-    }
-
-    const turn = chess.turn();
-    const moveNumber = chess.moveNumber();
-    const isBlackMoveNumber = turn === "b" && parts.length === 0;
-
-    try {
-      chess.move(node.move);
-    } catch (error) {
-      console.warn("PGN variation error", {
-        error: error instanceof Error ? error.message : String(error),
-      });
-
-      break;
-    }
-
-    if (turn === "w") {
-      parts.push(`${moveNumber}. ${node.move}`);
-    } else if (isBlackMoveNumber) {
-      parts.push(`${moveNumber}... ${node.move}`);
-    } else {
-      parts.push(node.move);
-    }
-
-    if (node.main) {
-      const mainText = serializeChain(node.main, chess.fen());
-
-      if (mainText) {
-        parts.push(mainText);
-      }
-    }
-
-    for (const variation of node.variations) {
-      const variationText = serializeChain(variation, node.fen);
-
-      if (variationText) {
-        parts.push(`(${variationText})`);
-      }
-    }
-
-    break;
+  const turn = chess.turn();
+  const moveNumber = chess.moveNumber();
+  chess.move(node.move);
+  if (turn === "w") {
+    return `${moveNumber}. ${node.move}`;
   }
-
-  return parts.join(" ").trim();
+  return firstInLine ? `${moveNumber}... ${node.move}` : node.move;
 }
 
-function serializeVariation(startNode: TreeNode, startFen: string): string {
-  return serializeChain(startNode, startFen);
+function serializeBranch(node: TreeNode, startFen: string, firstInLine: boolean): string {
+  return [
+    formatMove(node, startFen, firstInLine),
+    serializeContinuation(node),
+  ].filter(Boolean).join(" ");
 }
 
-function serializeMainLine(root: TreeNode, startFen: string): string {
-  const chess = new Chess(startFen);
-  const parts: string[] = [];
-  let node = root.main;
-
-  while (node) {
-    if (!node.move) {
-      break;
-    }
-
-    const turn = chess.turn();
-    const moveNumber = chess.moveNumber();
-
-    try {
-      chess.move(node.move);
-
-      if (turn === "w") {
-        parts.push(`${moveNumber}. ${node.move}`);
-      } else {
-        parts.push(node.move);
-      }
-
-      const variationStartFen = node.fen;
-
-      if (node.main && node.main.move) {
-        const mainNode = node.main;
-        const mainTurn = chess.turn();
-        const mainMoveNumber = chess.moveNumber();
-
-        if (mainNode.move) {
-          try {
-            chess.move(mainNode.move);
-
-            if (mainTurn === "w") {
-              parts.push(`${mainMoveNumber}. ${mainNode.move}`);
-            } else {
-              parts.push(mainNode.move);
-            }
-
-            for (const variation of node.variations) {
-              const variationText = serializeVariation(
-                variation,
-                variationStartFen,
-              );
-
-              if (variationText) {
-                parts.push(`(${variationText})`);
-              }
-            }
-
-            node = mainNode.main;
-          } catch (error) {
-            console.warn("PGN main error", {
-              error: error instanceof Error ? error.message : String(error),
-            });
-
-            break;
-          }
-        }
-      } else {
-        break;
-      }
-    } catch (error) {
-      console.warn("PGN main error", {
-        error: error instanceof Error ? error.message : String(error),
-      });
-
-      break;
-    }
+/**
+ * `parent.variations` are alternatives to `parent.main`; emit them immediately
+ * after that main move. This is the Recursive Annotation Variation ordering
+ * expected by PGN readers such as Lichess and chess.js.
+ */
+function serializeContinuation(parent: TreeNode): string {
+  const main = parent.main;
+  if (!main) {
+    return "";
   }
-
-  return parts.join(" ").trim();
+  const parts = [formatMove(main, parent.fen, false)];
+  for (const variation of parent.variations) {
+    parts.push(`(${serializeBranch(variation, parent.fen, true)})`);
+  }
+  const afterMain = serializeContinuation(main);
+  if (afterMain) {
+    parts.push(afterMain);
+  }
+  return parts.filter(Boolean).join(" ");
 }
 
-export function downloadGamePgn(gameRoot: TreeNode | null) {
-  if (gameRoot) {
-    const initialFen = gameRoot.fen;
-    const pgnMoves = serializeMainLine(gameRoot, initialFen);
-    const pgnHeaders = [
-      '[Event "Analysis"]',
-      '[Site "Local Analysis"]',
-      `[Date "${new Date().toISOString().slice(0, 10).replace(/-/g, ".")}"]`,
-      '[Round "?"]',
-      '[White "Player"]',
-      '[Black "Player"]',
-      '[Result "*"]',
-      "",
-    ].join("\n");
-    const fullPgn = `${pgnHeaders}${pgnMoves} *`;
-    const blob = new Blob([fullPgn], {
-      type: "text/plain;charset=utf-8",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-
-    link.href = url;
-    link.download = `analysis-${Date.now()}.pgn`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+export function serializeGamePgn(gameRoot: TreeNode): string {
+  if (!gameRoot.main) {
+    return "";
   }
+  return serializeBranch(gameRoot.main, gameRoot.fen, true).trim();
+}
+
+function escapeHeader(value: string) {
+  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+function playerName(player?: Player) {
+  return [player?.fname, player?.lname].filter(Boolean).join(" ");
+}
+
+function pgnResult(result: Result) {
+  if (result === "WHITEWIN") return "1-0";
+  if (result === "BLACKWIN") return "0-1";
+  if (result === "DRAW") return "1/2-1/2";
+  return "*";
+}
+
+function formatClock(seconds: number | undefined) {
+  if (seconds === undefined || !Number.isFinite(seconds)) return undefined;
+  const value = Math.max(0, Math.floor(seconds));
+  const hours = Math.floor(value / 3600);
+  const minutes = Math.floor((value % 3600) / 60);
+  const rest = value % 60;
+  return [hours, minutes, rest].map(part => String(part).padStart(2, "0")).join(":");
+}
+
+export function downloadGamePgn(
+  gameRoot: TreeNode | null,
+  game?: Game,
+  pairing?: Pairing,
+) {
+  if (!gameRoot) {
+    return;
+  }
+  const setupHeaders = gameRoot.fen === new Chess().fen()
+    ? []
+    : ['[SetUp "1"]', `[FEN "${gameRoot.fen}"]`];
+  const existing = game?.headers ?? {};
+  const whiteName = playerName(pairing?.white ?? game?.white) || existing.White || "";
+  const blackName = playerName(pairing?.black ?? game?.black) || existing.Black || "";
+  const result = pgnResult(game?.result);
+  const whiteClock = formatClock(game?.clock?.white) ?? existing.WhiteClock;
+  const blackClock = formatClock(game?.clock?.black) ?? existing.BlackClock;
+  const headers = [
+    `[Event "${escapeHeader(existing.Event ?? "Analysis")}"]`,
+    `[Site "${escapeHeader(existing.Site ?? "Local Analysis")}"]`,
+    `[Date "${escapeHeader(existing.Date ?? new Date().toISOString().slice(0, 10).replace(/-/g, "."))}"]`,
+    `[Round "${escapeHeader(existing.Round ?? "?")}"]`,
+    `[White "${escapeHeader(whiteName)}"]`,
+    `[Black "${escapeHeader(blackName)}"]`,
+    `[Result "${result}"]`,
+    ...(existing.WhiteElo ? [`[WhiteElo "${escapeHeader(existing.WhiteElo)}"]`] : []),
+    ...(existing.BlackElo ? [`[BlackElo "${escapeHeader(existing.BlackElo)}"]`] : []),
+    ...(whiteClock ? [`[WhiteClock "${escapeHeader(whiteClock)}"]`] : []),
+    ...(blackClock ? [`[BlackClock "${escapeHeader(blackClock)}"]`] : []),
+    ...setupHeaders,
+    "",
+  ].join("\n");
+  const moves = [serializeGamePgn(gameRoot), result].filter(Boolean).join(" ");
+  const blob = new Blob([`${headers}\n${moves}`], {
+    type: "text/plain;charset=utf-8",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `analysis-${Date.now()}.pgn`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }

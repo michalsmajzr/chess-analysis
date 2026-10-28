@@ -3,6 +3,54 @@
 @import "../lib/cm-chessboard/assets/extensions/arrows/arrows.css";
 @import "../lib/cm-chessboard/assets/extensions/markers/markers.css";
 
+/* Prefer Roboto when it is installed locally, without making production builds
+   dependent on downloading it from Google Fonts. */
+body {
+  font-family: Roboto, Arial, sans-serif;
+}
+
+/* Compact scrollbar for the game strip; supports Firefox and Chromium. */
+.round-sidebar-scroll {
+  scrollbar-color: rgb(185 185 185) rgb(24 25 28);
+  scrollbar-width: thin;
+}
+
+.round-sidebar-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.round-sidebar-scroll::-webkit-scrollbar-track {
+  background: rgb(24 25 28);
+}
+
+.round-sidebar-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgb(215 215 215), rgb(150 150 150));
+  border: 0;
+  border-radius: 999px;
+  box-shadow: inset 0 1px rgb(255 255 255 / 18%);
+}
+
+.round-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgb(240 240 240);
+}
+
+/* Full HD stays compact; the larger breathing room is reserved for a real 4K
+   canvas so five boards still fit side by side at either resolution. */
+.multiboard-wall {
+  gap: 12px;
+  padding: 12px;
+}
+
+/* The second condition covers a 4K monitor using Windows display scaling. */
+@media (min-width: 3000px), (min-width: 1500px) and (min-resolution: 1.5dppx) {
+  .multiboard-wall {
+    column-gap: 28px;
+    row-gap: 32px;
+    padding: 20px;
+  }
+}
+
 :root {
   --md-sys-color-primary: rgb(255 182 136);
   --md-sys-color-surface-tint: rgb(255 182 136);
