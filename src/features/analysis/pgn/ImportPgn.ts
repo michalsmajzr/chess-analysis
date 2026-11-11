@@ -1,4 +1,4 @@
-import { createGameTreeFromRoot } from "@/features/analysis/domain/CreateGameTree";
+import { createGameTreeFromRoot } from "@/features/analysis/tree/CreateGameTree";
 import { getPgnMetadata, loadGamePgn } from "@/features/analysis/pgn/PgnParser";
 
 /** Parses a PGN into an analysis tree and its display metadata. */

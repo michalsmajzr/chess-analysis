@@ -1,5 +1,5 @@
 import type { Game, Pairing, RoundData } from "@/types/Game";
-import type { GameTree } from "@/features/analysis/domain/GameTree";
+import type { GameTree } from "@/features/analysis/tree/GameTree";
 import type { TreeNode } from "@/features/analysis/types/tree";
 
 /** Represents an entry in the analysis workspace, including the game tree and associated metadata. */

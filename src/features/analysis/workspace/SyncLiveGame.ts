@@ -1,6 +1,6 @@
 import type { Game } from "@/types/Game";
-import { GameTree } from "@/features/analysis/domain/GameTree";
-import { createGameTreeFromLiveGame } from "@/features/analysis/domain/CreateGameTree";
+import { GameTree } from "@/features/analysis/tree/GameTree";
+import { createGameTreeFromLiveGame } from "@/features/analysis/tree/CreateGameTree";
 
 /** Synchronizes a live game with an existing analysis tree, optionally following the latest move. */
 export function syncLiveGame(

@@ -1,7 +1,7 @@
 import { Chess } from "chess.js";
 import { v4 as uuidv4 } from "uuid";
 import type { Game } from "@/types/Game";
-import { GameTree } from "@/features/analysis/domain/GameTree";
+import { GameTree } from "@/features/analysis/tree/GameTree";
 import { extractLiveSan } from "@/utils/extractLiveSan";
 import type { TreeNode } from "@/features/analysis/types/tree";
 

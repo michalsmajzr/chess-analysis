@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { RoundData } from "@/types/Game";
-import { AnalysisWorkspace } from "@/features/analysis/application/AnalysisWorkspace";
-import { syncLiveGame } from "@/features/analysis/application/SyncLiveGame";
+import { AnalysisWorkspace } from "@/features/analysis/workspace/AnalysisWorkspace";
+import { syncLiveGame } from "@/features/analysis/workspace/SyncLiveGame";
 import type { AnalysisWorkspaceResult, AnalysisWorkspaceState } from "@/features/analysis/types/workspace";
 import { importPgn } from "@/features/analysis/pgn/ImportPgn";
 import { useStockfish } from "@/stockfish/useStockfish";

@@ -1,5 +1,5 @@
-import { GameTree } from "@/features/analysis/domain/GameTree";
-import { createEmptyGameTree } from "@/features/analysis/domain/CreateGameTree";
+import { GameTree } from "@/features/analysis/tree/GameTree";
+import { createEmptyGameTree } from "@/features/analysis/tree/CreateGameTree";
 import type {
   AnalysisWorkspaceEntry,
   AnalysisWorkspaceResult,

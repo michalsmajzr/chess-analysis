@@ -1,5 +1,5 @@
-import { addTreeMove } from "@/features/analysis/domain/addTreeMove";
-import { syncLiveMainLine } from "@/features/analysis/domain/syncLiveMainLine";
+import { addTreeMove } from "@/features/analysis/tree/addTreeMove";
+import { syncLiveMainLine } from "@/features/analysis/tree/syncLiveMainLine";
 import type { TreeNode } from "@/features/analysis/types/tree";
 
 /** Game tree for managing chess positions and variations. */
