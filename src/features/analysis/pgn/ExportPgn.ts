@@ -1,5 +1,6 @@
 import { Chess } from "chess.js";
-import type { Game, Pairing, Player, Result, TreeNode } from "@/types/Game";
+import type { Game, Pairing, Player, Result } from "@/types/Game";
+import type { TreeNode } from "@/features/analysis/types/tree";
 
 function formatMove(node: TreeNode, startFen: string, firstInLine: boolean): string {
   if (!node.move) {

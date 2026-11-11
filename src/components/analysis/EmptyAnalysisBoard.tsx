@@ -18,7 +18,7 @@ export const EMPTY_ANALYSIS_GAME: Game = {
   moves: [],
 };
 
-/** Persistent last sidebar board: a clean starting position for free analysis. */
+/** Empty analysis board component for displaying a clean starting position with evaluation. */
 export function EmptyAnalysisBoard({
   fen,
   lastMove,

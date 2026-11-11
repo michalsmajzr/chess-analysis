@@ -25,6 +25,7 @@ export function SmallChessBoard({
   const { fen, lastMove } = resolvePosition(game.moves ?? []);
   const { evalScore, rawEvalScore } = useRemoteStockfish(game.id, fen);
 
+  // Compute the evaluation score for the current position using the remote Stockfish engine.
   useLayoutEffect(() => {
     obsClient.publishGame(obsGame, {
       fen,

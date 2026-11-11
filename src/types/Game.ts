@@ -27,7 +27,11 @@ export interface Game {
   clock?: {
     white?: number;
     black?: number;
+    /** LiveChessCloud server timestamp in milliseconds. */
+    time?: number;
     timestamp?: number;
+    /** `true` means White's clock runs; `false` means Black's. */
+    run?: boolean | null;
   };
 }
 
@@ -38,24 +42,6 @@ export interface Player {
   title?: string | null;
   elo?: number | null;
   icon?: string | null;
-}
-
-export interface TreeNode {
-  id: string;
-  move?: string;
-  from?: string;
-  to?: string;
-  promotion?: string;
-  fen: string;
-  parent: TreeNode | null;
-  main?: TreeNode;
-  variations: TreeNode[];
-  isMain: boolean;
-}
-
-export interface GameCache {
-  root: TreeNode;
-  lastActiveNode: TreeNode;
 }
 
 export interface RoundInfo {

@@ -43,7 +43,6 @@ export default function ChessBoard({
   onDragChange,
   animatePosition = false,
   animationKey,
-  animationTrigger,
   annotationsResetKey,
 }: {
   fen: string;
@@ -59,7 +58,6 @@ export default function ChessBoard({
   onDragChange?: (drag: BoardDragData) => void;
   animatePosition?: boolean;
   animationKey?: string;
-  animationTrigger?: number;
   annotationsResetKey?: string;
 }) {
   const boardRef = useRef<HTMLDivElement | null>(null);
@@ -115,6 +113,8 @@ export default function ChessBoard({
       board.destroy();
       boardInstance.current = null;
     };
+  // The board is intentionally recreated only after a generation change.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boardGeneration]);
 
   useLayoutEffect(() => {

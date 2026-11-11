@@ -19,7 +19,6 @@ export function ChessboardBoard({
       dragPreview={drag}
       animatePosition
       animationKey={data?.game.id}
-      animationTrigger={data?.moveAnimationId}
       className="pointer-events-none w-full select-none"
     />
   );

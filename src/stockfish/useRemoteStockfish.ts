@@ -4,6 +4,7 @@ import { useCallback, useSyncExternalStore } from "react";
 import { evaluationClient } from "@/websocket/client";
 import { useSmoothEval } from "@/stockfish/useSmoothEval";
 
+/** Hook for retrieving remote Stockfish evaluations for a given game and FEN. */
 export function useRemoteStockfish(gameId: string, fen: string) {
   const evaluation = useSyncExternalStore(
     useCallback(listener => evaluationClient.subscribe(gameId, fen, listener), [gameId, fen]),

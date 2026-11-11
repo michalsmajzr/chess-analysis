@@ -8,14 +8,13 @@ import SkipNextIcon from "@mui/icons-material/SkipNext";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import { Chess } from "chess.js";
-import { TreeNode } from "@/types/Game";
+import type { TreeNode } from "@/features/analysis/types/tree";
 import { EnginePV } from "@/types/Engine";
-import { RenderItem } from "@/types/Render";
+import { renderMoveList } from "@/components/analysis/utils/renderMoveList";
 
 export function AnalysisSideBar({
   gameRoot,
   currentNode,
-  renderLine,
   goToNode,
   goBack,
   goNext,
@@ -27,7 +26,6 @@ export function AnalysisSideBar({
 }: {
   gameRoot: TreeNode | null;
   currentNode: TreeNode | null;
-  renderLine: (root: TreeNode, current: TreeNode | null) => RenderItem[];
   goToNode: (node: TreeNode) => void;
   goBack: () => void;
   goNext: () => void;
@@ -63,7 +61,7 @@ export function AnalysisSideBar({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [goBack, goNext]);
+  }, [goBack, goNext, goToLast, goToStart]);
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -216,7 +214,7 @@ export function AnalysisSideBar({
         className="flex-1 min-h-0 grid grid-flow-row-dense grid-cols-[3.25rem_minmax(0,1fr)_minmax(0,1fr)] auto-rows-max items-center gap-y-1.5 p-2 bg-white overflow-y-auto"
       >
         {gameRoot &&
-          renderLine(gameRoot, currentNode).map((item, i) => {
+          renderMoveList(gameRoot, currentNode).map((item, i) => {
             if (item.type === "move_number") {
               return (
                 <div

@@ -1,6 +1,6 @@
 import { Chess } from "chess.js";
 import { mapPlayer } from "@/api/players";
-import { extractLiveSan } from "@/utils/syncLiveMainLine";
+import { extractLiveSan } from "@/utils/extractLiveSan";
 import { Game, Pairing, Tournament, RoundInfo } from "@/types/Game";
 
 const LIVE_FETCH_OPTIONS: RequestInit = { cache: "no-store" };

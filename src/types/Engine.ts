@@ -21,6 +21,22 @@ export interface AnalyzeOptions {
 export interface EngineArrow {
   from: string;
   to: string;
+  promotion?: string;
+  score?: number;
+  mate?: number;
+  brush?: "success" | "warning" | "info" | "danger";
+}
+
+export interface BoardMarker {
+  square: string;
+  brush?: "success" | "warning" | "info" | "danger";
+}
+
+/** Evaluation returned by the remote Stockfish service. */
+export interface EngineEvaluation {
+  score: number;
+  mate?: number;
+  depth?: number;
 }
 
 export interface BestMove {

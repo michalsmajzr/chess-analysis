@@ -5,14 +5,24 @@ This project is used to analyze chess games from the livechesscloud app.
 
 Demo version is available on my domain [chess-analysis.michalsmajzr.cz](https://chess-analysis.michalsmajzr.cz/)
 
-## Project structure 
-- **public** – static images (images for cm-chessboard and the Stockfish engine)
-- **src** – source files
-- **api** – files for fetching data from the LiveChessCloud JSON API
-- **lib** – libraries (cm-chessboard)
-- **utils** – utility functions
-- **app** – main application page
-- **components** – reusable components
-- **stockfish** – files for processing data from Stockfish 18
-- **providers** – theme provider
-- **types** – defined types
+## Project structure
+
+```
+.
+├── docker/                 Docker Compose and Stockfish container configuration
+├── bridge/                 Desktop relay for OBS on a different computer
+├── server/                 Server-side WebSocket and API integrations
+├── src/
+│   ├── app/                Next.js pages and routes
+│   ├── components/         React UI components
+│   ├── features/analysis/  Chess analysis feature
+│   ├── stockfish/          Browser Stockfish integration
+│   ├── api/                LiveChessCloud client
+│   ├── websocket/          Browser WebSocket clients
+│   ├── utils/              Shared utility functions
+│   ├── types/              Shared TypeScript types
+│   ├── providers/          Application providers
+│   └── lib/                Integrated cm-chessboard library
+├── public/                 Static assets
+├── Dockerfile              Web application images
+```

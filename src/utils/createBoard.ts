@@ -1,3 +1,6 @@
+/* The cm-chessboard extension API ships without TypeScript declarations. */
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-function-type */
+
 import {
   Chessboard,
   INPUT_EVENT_TYPE,
@@ -120,11 +123,13 @@ export function createBoard(
       reportAnnotations();
     }
   };
+
   const handleMouseUp = (event: MouseEvent) => {
     if (event.button === 2) {
       reportAnnotations();
     }
   };
+  
   element.addEventListener("pointerdown", handlePointerDown);
   // RightClickAnnotator also listens for mouseup and was registered first, so
   // its final arrow state is available synchronously here.

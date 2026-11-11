@@ -29,9 +29,11 @@ export class ObsClient {
     if (this.socket || typeof window === "undefined") {
       return;
     }
+
     const protocol = window.location.protocol === "https:" ? "wss" : "ws";
     const socket = new WebSocket(`${protocol}://${window.location.host}/obs`);
     this.socket = socket;
+
     socket.onopen = () => {
       if (this.publisherRequested && this.publisherToken) {
         socket.send(JSON.stringify({ type: "publisher-auth", token: this.publisherToken }));
@@ -50,6 +52,7 @@ export class ObsClient {
         }
       }
     };
+
     socket.onmessage = event => {
       try {
         const message = JSON.parse(event.data) as ObsServerMessage;
@@ -80,6 +83,7 @@ export class ObsClient {
         }
       } catch {}
     };
+
     socket.onclose = event => {
       if (this.socket !== socket) {
         return;
@@ -145,6 +149,7 @@ export class ObsClient {
   publishGame(game: number, data: ObsGameData) {
     this.send({ type: "publish-game", game, data }, `publish-game:${game}`, true);
   }
+
   publishGameCount(count: number) {
     for (const key of [...this.published.keys()]) {
       const match = /^publish-game:(\d+)$/.exec(key);
@@ -154,12 +159,15 @@ export class ObsClient {
     }
     this.send({ type: "publish-game-count", count }, "publish-game-count", true);
   }
+
   publishBoard(data: ObsBoardData) {
     this.send({ type: "publish-board", data }, "publish-board", true);
   }
+
   publishBoardDrag(data: BoardDragData) {
     this.send({ type: "publish-board-drag", data }, "publish-board-drag", true);
   }
+  
   switchCamera(board: number) {
     this.send({ type: "switch-camera", board }, "switch-camera");
   }

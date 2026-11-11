@@ -1,18 +1,11 @@
 import { Chess } from "chess.js";
 import { v4 as uuidv4 } from "uuid";
-import type { TreeNode } from "@/types/Game";
+import type { TreeNode } from "@/features/analysis/types/tree";
+import { extractLiveSan } from "@/utils/extractLiveSan";
 
-/** Turns the move notation returned by LiveChessCloud into SAN. */
-export function extractLiveSan(move: string): string {
-  return move
-    .replace(/^\d+\.(?:\.\.)?\s*/, "")
-    .replace(/\{.*?\}/g, "")
-    .replace(/\$\d+/g, "")
-    .replace(/[?!]+/g, "")
-    .trim()
-    .split(/\s+/)[0] ?? "";
-}
-
+/**
+ * Updates the main line of a cached analysis tree to match the latest live moves.
+ */
 function setMainStatus(node: TreeNode, isMain: boolean) {
   let current: TreeNode | undefined = node;
   while (current) {
@@ -21,6 +14,10 @@ function setMainStatus(node: TreeNode, isMain: boolean) {
   }
 }
 
+/**
+ * Moves the current main line of a parent node to its variations.
+ * Returns true if a main line was moved.
+ */
 function moveMainToVariations(parent: TreeNode): boolean {
   const previousMain = parent.main;
   if (!previousMain) {
@@ -28,10 +25,12 @@ function moveMainToVariations(parent: TreeNode): boolean {
   }
 
   setMainStatus(previousMain, false);
+
   if (!parent.variations.some(variation => variation.id === previousMain.id)) {
     parent.variations.push(previousMain);
   }
   parent.main = undefined;
+
   return true;
 }
 
@@ -54,8 +53,7 @@ export function syncLiveMainLine(root: TreeNode, moves: string[]) {
       continue;
     }
 
-    // Reuse the already validated prefix. Clock-only polls need no chess
-    // calculation; appended/corrected moves start at the last matching FEN.
+    // If the next move matches the current main line, just follow it.
     if (current.main?.move === san) {
       current.main.isMain = true;
       current = current.main;
@@ -115,8 +113,6 @@ export function syncLiveMainLine(root: TreeNode, moves: string[]) {
     changed = true;
   }
 
-  // The API list is authoritative. Its removed tail remains available as an
-  // analysis branch, while the rendered main line ends at the newest legal move.
   changed = moveMainToVariations(current) || changed;
 
   return { lastNode: current, changed, invalidMoves };

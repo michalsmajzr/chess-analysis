@@ -1,0 +1,13 @@
+# Dependencies and generated output are restored or built inside the image.
+node_modules
+.next
+
+# Local configuration and repository metadata must not become image content.
+.env*
+.git
+
+# Docker configuration is used only by the host. Keep the Stockfish Dockerfile
+# available because Compose selects it explicitly as the build file.
+docker/*
+!docker/Dockerfile
+bridge/

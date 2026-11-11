@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored sources are not maintained in this application.
+    "public/stockfish/**",
+    "src/lib/cm-chessboard/**",
   ]),
 ]);
 

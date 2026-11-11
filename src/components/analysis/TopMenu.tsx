@@ -7,14 +7,13 @@ import DownloadIcon from "@mui/icons-material/Download";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
-import { loadRound } from "@/api/liveChessCloud";
-import { Tournament, RoundData } from "@/types/Game";
+import { Tournament } from "@/types/Game";
 import { obsClient } from "@/websocket/obsClient";
 import { useEffect, useState } from "react";
 
 export function TopMenu({
   tournaments,
-  setSelectedRoundsData,
+  onRoundSelected,
   loadPgn,
   canImportPgn,
   onDownloadPgn,
@@ -27,7 +26,7 @@ export function TopMenu({
   pgnInputRef,
 }: {
   tournaments: Tournament[];
-  setSelectedRoundsData: React.Dispatch<React.SetStateAction<RoundData[]>>;
+  onRoundSelected: (tournamentId: string, round: number, tournamentIndex: number) => void;
   loadPgn: (pgn: string) => void;
   canImportPgn: boolean;
   onDownloadPgn: () => void;
@@ -46,34 +45,16 @@ export function TopMenu({
 
   useEffect(() => obsClient.subscribePublisherStatus(setPublisherStatus), []);
 
-  async function handleRoundChange(
+  // Handle changes in the selected round from the live-rounds menu.
+  function handleRoundChange(
     baseId: string,
     roundId: number,
     tournamentIndex: number,
   ) {
-    const data = await loadRound(baseId, roundId);
-
-    setSelectedRoundsData((prev) => {
-      const updated: RoundData[] = [
-        ...prev.filter((r) => r.tournamentIndex !== tournamentIndex),
-        {
-          tournamentIndex,
-          tournamentId: baseId,
-          tournamentName: tournaments[tournamentIndex]?.name ?? baseId,
-          round: roundId,
-          info: data.info,
-          games: data.games,
-        },
-      ];
-
-      return tournaments
-        .map((_: Tournament, index: number) =>
-          updated.find((r) => r.tournamentIndex === index),
-        )
-        .filter((r): r is RoundData => r !== undefined);
-    });
+    onRoundSelected(baseId, roundId, tournamentIndex);
   }
 
+  // Handle loading a PGN file from the user's input.
   async function handleLoadPgn(event: React.ChangeEvent<HTMLInputElement>) {
     if (!canImportPgn) {
       event.target.value = "";
@@ -90,6 +71,7 @@ export function TopMenu({
     }
   }
 
+  // Render the follow-live control switch.
   const followLiveControl = (vertical = false) => (
     <FormControlLabel
       control={
@@ -104,6 +86,7 @@ export function TopMenu({
     />
   );
 
+  // Render the main control panel, including publisher, PGN, engine arrows, and follow-live controls.
   const controls = (vertical = false) => (
     <div className={vertical ? "flex w-full flex-col items-stretch gap-3" : "flex flex-1 items-center gap-3"}>
       <Button

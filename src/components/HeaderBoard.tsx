@@ -25,6 +25,8 @@ export function HeaderBoard({
       >
       <div className="flex min-w-0 flex-1 items-center">
         {player?.icon ? (
+          // Player avatar URLs come from the live API and are not known at build time.
+          // eslint-disable-next-line @next/next/no-img-element
           <img src={player.icon} alt="logo" className="border-r border-stone-500 w-8 h-8" />
         ) : <AccountBoxIcon sx={{ fontSize: 31 }} />}
         <div className="flex min-w-0 flex-1 items-end gap-3 p-1 pl-6">

@@ -1,0 +1,8 @@
+node_modules
+.next
+docker
+Dockerfile
+docs
+bridge
+scripts
+server

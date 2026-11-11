@@ -47,6 +47,7 @@ export class EvaluationClient {
     let entry = this.entries.get(gameId);
     const changed = !entry || entry.request.fen !== fen;
     const inactive = !entry?.listeners.size;
+
     if (!entry) {
       entry = { request: this.request(gameId, fen), listeners: new Set() };
       this.entries.set(gameId, entry);
@@ -54,10 +55,13 @@ export class EvaluationClient {
       // Keep the last evaluation until a response for this request arrives.
       entry.request = this.request(gameId, fen);
     }
+
     entry.listeners.add(listener);
+
     if (changed || inactive) {
       this.send(entry.request);
     }
+
     this.connect();
 
     return () => {
@@ -65,6 +69,7 @@ export class EvaluationClient {
       if (!entry.listeners.size) {
         this.send({ type: "unsubscribe", gameId });
       }
+
       // Bound retained scores without dropping mounted boards.
       for (const [id, candidate] of this.entries) {
         if (this.entries.size <= 1000) {
@@ -74,6 +79,7 @@ export class EvaluationClient {
           this.entries.delete(id);
         }
       }
+      
       if (!this.hasSubscribers()) {
         clearTimeout(this.retry);
         this.retry = undefined;
@@ -116,6 +122,7 @@ export class EvaluationClient {
     if (this.socket || this.retry || !this.hasSubscribers()) {
       return;
     }
+
     let ws: WebSocket;
     try {
       ws = new WebSocket(this.getUrl());
@@ -123,7 +130,9 @@ export class EvaluationClient {
       this.scheduleReconnect();
       return;
     }
+
     this.socket = ws;
+
     ws.onopen = () => {
       if (this.socket !== ws) {
         return;
@@ -139,16 +148,20 @@ export class EvaluationClient {
         }
       }
     };
+
     ws.onmessage = (event) => {
       if (this.socket !== ws) {
         return;
       }
+
       try {
         const message: unknown = JSON.parse(event.data);
         if (!isEvaluation(message)) {
           return;
         }
+
         const entry = this.entries.get(message.gameId);
+
         if (
           !entry ||
           message.requestId !== entry.request.requestId ||
@@ -156,11 +169,13 @@ export class EvaluationClient {
         ) {
           return;
         }
+
         entry.evaluation = {
           score: message.score,
           mate: message.mate,
           depth: message.depth,
         };
+
         entry.listeners.forEach((listener) => listener());
       } catch {
         /* Ignore malformed messages and retain the last evaluation. */
@@ -172,6 +187,7 @@ export class EvaluationClient {
         ws.close();
       }
     };
+
     ws.onclose = () => {
       if (this.socket !== ws) {
         return;

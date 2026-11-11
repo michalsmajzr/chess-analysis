@@ -1,5 +1,6 @@
 import { Chess } from "chess.js";
-import { Game, Pairing, Result, TreeNode } from "@/types/Game";
+import type { Game, Pairing, Result } from "@/types/Game";
+import type { TreeNode } from "@/features/analysis/types/tree";
 import { v4 as uuidv4 } from "uuid";
 
 type BranchKind = "main" | "variation";

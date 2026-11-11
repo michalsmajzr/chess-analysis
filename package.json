@@ -2,17 +2,16 @@
   "name": "chess-analysis",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "node server.mjs --dev",
+    "dev": "node server/start.ts --dev",
     "build": "next build",
-    "start": "node server.mjs",
+    "start": "node server/start.ts",
     "obs-bridge": "electron bridge/main.mjs",
     "publisher-token": "node scripts/generatePublisherToken.mjs",
     "stockfish:build": "docker build -t chess-stockfish -f docker/Dockerfile .",
     "stockfish:small:start": "docker run --rm --name chess-stockfish-small --cpus 2 --memory 512m -p 127.0.0.1:5000:5000 chess-stockfish",
     "stockfish:start": "npm run stockfish:small:start",
-    "test:remote-stockfish": "node --test server/*.test.mjs src/websocket/client.test.mjs",
-    "test:stockfish-client": "node --test src/stockfish/*.test.mjs",
     "lint": "eslint"
   },
   "dependencies": {

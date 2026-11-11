@@ -1,5 +1,5 @@
-import { SmallChessBoard } from "./SmallChessBoard";
-import { EmptyAnalysisBoard } from "./EmptyAnalysisBoard";
+import { SmallChessBoard } from "@/components/analysis/SmallChessBoard";
+import { EmptyAnalysisBoard } from "@/components/analysis/EmptyAnalysisBoard";
 import { Game, Pairing, RoundData } from "@/types/Game";
 
 export function RoundSideBar({

@@ -28,8 +28,8 @@ export function getLiveClock(game: Game, now = Date.now()) {
     });
   }
 
-  // LiveChessCloud can leave `clock.run` set after it has already supplied a
-  // result. A result is authoritative: keep the final server clock frozen.
+  // LiveChessCloud can leave `clock.run` set after it has already supplied a result.
+  // A result is authoritative: keep the final server clock frozen.
   if (!isFinishedGame(game)) {
     const lag = Math.max(0, Math.floor((now - lastServerTime) / 1000));
     if (game.clock?.run === true) {

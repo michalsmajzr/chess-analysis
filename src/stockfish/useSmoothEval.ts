@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 
+/** Hook for smoothly interpolating a numeric value towards a target over time. */
 export function useSmoothEval(targetValue: number, speed = 0.12) {
   const [smoothValue, setSmoothValue] = useState(targetValue);
 
