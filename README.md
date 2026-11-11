@@ -8,17 +8,21 @@ Demo version is available on my domain [chess-analysis.michalsmajzr.cz](https://
 ## Project structure
 
 ```
-.
-├── src/
-│   ├── app/                Next.js pages and routes
-│   ├── components/         React UI components
-│   ├── features/analysis/  Chess analysis feature
-│   ├── stockfish/          Browser Stockfish integration
-│   ├── api/                LiveChessCloud client
-│   ├── websocket/          Browser WebSocket clients
-│   ├── utils/              Shared utility functions
-│   ├── types/              Shared TypeScript types
-│   ├── providers/          Application providers
-│   └── lib/                Integrated cm-chessboard library
-├── public/                 Static assets
+src/
+  api/                    LiveChessCloud config, games and players
+  app/                    Next.js routes
+  components/             React UI components
+    analysis/
+    broadcast/
+  features/
+    analysis/
+      tree/               GameTree and chess-tree operations
+      workspace/          Open games, active tree and follow-live
+      pgn/                PGN import and export
+      hooks/              React hooks for analysis
+      types/              Analysis-specific types
+  websocket/              EvaluationClient and ObsClient
+  stockfish/              Browser Stockfish integration
+  types/                  Shared application types
+  utils/                  Small shared helpers
 ```
