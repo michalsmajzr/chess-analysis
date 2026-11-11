@@ -9,9 +9,6 @@ Demo version is available on my domain [chess-analysis.michalsmajzr.cz](https://
 
 ```
 .
-├── docker/                 Docker Compose and Stockfish container configuration
-├── bridge/                 Desktop relay for OBS on a different computer
-├── server/                 Server-side WebSocket and API integrations
 ├── src/
 │   ├── app/                Next.js pages and routes
 │   ├── components/         React UI components
