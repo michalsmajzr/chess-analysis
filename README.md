@@ -21,5 +21,4 @@ Demo version is available on my domain [chess-analysis.michalsmajzr.cz](https://
 │   ├── providers/          Application providers
 │   └── lib/                Integrated cm-chessboard library
 ├── public/                 Static assets
-├── Dockerfile              Web application images
 ```
